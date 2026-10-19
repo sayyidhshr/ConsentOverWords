@@ -87,6 +87,7 @@ export const INITIAL_STORIES = [
 export const AWARENESS_QUESTIONS = [
   {
     id: 1,
+    category: "Sharing Without Consent",
     scenario: "Seorang teman memotret teman lain yang sedang tertidur di kelas, lalu mengunggahnya ke Instagram Story untuk bahan 'jokes'.",
     question: "Apakah tindakan ini melanggar batas (digital boundary) jika belum ada izin dari yang bersangkutan?",
     options: [
@@ -98,6 +99,7 @@ export const AWARENESS_QUESTIONS = [
   },
   {
     id: 2,
+    category: "Digital Boundaries & Chat Consent",
     scenario: "Seseorang terus mengirimkan pesan 'P', menyapa larut malam, dan meminta nomor telepon pribadi di DM meskipun sudah tidak dibalas berkali-kali.",
     question: "Apakah mengabaikan sinyal 'tidak merespons' termasuk pelanggaran consent komunikasi?",
     options: [
@@ -109,36 +111,172 @@ export const AWARENESS_QUESTIONS = [
   },
   {
     id: 3,
+    category: "Breach of Trust & Confidentiality",
     scenario: "Teman satu grup membagikan tangkapan layar (screenshot) obrolan curhat personal Anda ke grup lain yang lebih besar untuk ditertawakan bersama.",
     question: "Apakah screenshot percakapan privat boleh dibagikan secara bebas tanpa izin pengirim?",
     options: [
       { label: "Boleh saja kalau seru", value: "no", correct: false },
-      { label: "Tidak boleh, itu ruang privat", value: "yes", correct: true },
+      { label: "Tidak boleh, itu ruang privat yang wajib dijaga izinnya", value: "yes", correct: true },
       { label: "Boleh asal nama disensor sedikit", value: "not_sure", correct: false }
     ],
     explanation: "Tepat sekali! Percakapan privat memiliki ekspektasi kerahasiaan. Menyebarkan screenshot tanpa izin melanggar kepercayaan (breach of trust) dan dapat menimbulkan dampak psikologis yang serius bagi korban."
   },
   {
     id: 4,
-    scenario: "Seseorang mengomentari bentuk tubuh teman di postingan media sosial dengan kata-kata sindiran, lalu menambahkan 'cuma ngingetin doang kok, jangan baper'.",
+    category: "Body Shaming & Intent vs. Impact",
+    scenario: "Seseorang mengomentari bentuk tubuh teman di postingan media sosial dengan kata-kata sindiran, lalu menambahkan 'cuma ngingetin doang kok demi kebaikanmu, jangan baper'.",
     question: "Apakah niat 'mengingatkan' atau 'candaan' menghapus dampak negatif dari body shaming?",
     options: [
-      { label: "Ya, niat baik harus dimaklumi", value: "no", correct: false },
-      { label: "Tidak, dampak lebih utama dari niat", value: "yes", correct: true },
+      { label: "Ya, niat baik harus selalu dimaklumi", value: "no", correct: false },
+      { label: "Tidak, dampak yang dirasakan korban lebih utama daripada dalih niat", value: "yes", correct: true },
       { label: "Tergantung seberapa dekat pertemanannya", value: "not_sure", correct: false }
     ],
     explanation: "Benar! Prinsip dasar etika komunikasi digital adalah: 'Intent does not equal Impact'. Niat baik atau candaan tidak menghapus rasa sakit dan ketidaknyamanan yang dirasakan penerima."
   },
   {
     id: 5,
-    scenario: "Anda melihat teman Anda dirundung (cyberbullying) di kolom komentar akun publik, tetapi Anda memilih diam agar tidak ikut terseret masalah.",
+    category: "Upstander & Bystander Intervention",
+    scenario: "Anda melihat teman Anda dirundung (cyberbullying) di kolom komentar akun publik/menfess, tetapi Anda memilih diam agar tidak ikut terseret masalah.",
     question: "Apakah sikap diam sebagai saksi (bystander) dapat memperburuk situasi korban di ruang digital?",
     options: [
-      { label: "Ya, diam memberi ruang pelaku merasa benar", value: "yes", correct: true },
-      { label: "Tidak, diam adalah langkah paling netral", value: "no", correct: false },
-      { label: "Tidak yakin", value: "not_sure", correct: false }
+      { label: "Ya, diam memberi ruang pelaku merasa dinormalisasi", value: "yes", correct: true },
+      { label: "Tidak, diam adalah langkah paling netral dan bijak", value: "no", correct: false },
+      { label: "Tidak yakin / Bukan tanggung jawab saya", value: "not_sure", correct: false }
     ],
-    explanation: "Tepat. Dalam dinamika digital, saksi pasif (silent bystanders) secara tidak sengaja menormalisasi perilaku merundung. Memberikan dukungan privat atau melaporkan konten adalah langkah aman yang sangat berdampak."
+    explanation: "Tepat. Dalam dinamika digital, saksi pasif (silent bystanders) secara tidak sengaja menormalisasi perilaku perundungan. Memberikan dukungan privat atau melaporkan konten adalah langkah aman yang sangat berdampak."
+  },
+  {
+    id: 6,
+    category: "Kekerasan Berbasis Gender Online (KBGO)",
+    scenario: "Seseorang yang baru Anda kenal di platform belajar/game online tiba-tiba mengirimkan foto tidak senonoh (unsolicited explicit photo) tanpa persetujuan Anda.",
+    question: "Apakah tindakan mengirimkan konten seksual tanpa diminta termasuk pelecehan seksual di ruang digital?",
+    options: [
+      { label: "Ya, itu adalah cyber-flashing dan pelanggaran hukum KBGO", value: "yes", correct: true },
+      { label: "Tidak, selama tidak ada kontak fisik bukan pelecehan", value: "no", correct: false },
+      { label: "Hanya lelucon biasa di internet, cukup abaikan", value: "not_sure", correct: false }
+    ],
+    explanation: "Benar sekali! Pengiriman konten seksual tanpa persetujuan (cyber-flashing) merupakan bentuk kekerasan berbasis gender online (KBGO) yang diakui hukum dan diatur secara tegas dalam UU TPKS (Tindak Pidana Kekerasan Seksual)."
+  },
+  {
+    id: 7,
+    category: "Sextortion & Manipulasi Pemerasan",
+    scenario: "Seorang kenalan online mengancam akan menyebarkan foto atau data pribadi Anda ke publik jika Anda tidak menuruti tuntutan atau permintaannya.",
+    question: "Apa tindakan paling tepat dan aman saat menghadapi ancaman pemerasan digital (sextortion)?",
+    options: [
+      { label: "Menuruti sekali agar pelaku tidak menyebarkannya", value: "no", correct: false },
+      { label: "Amankan bukti screenshot lengkap, tolak tuntutan, blokir, dan lapor ke pendamping/SAPA 129", value: "yes", correct: true },
+      { label: "Menghapus akun seketika tanpa menyimpan bukti", value: "not_sure", correct: false }
+    ],
+    explanation: "Tepat! Menuruti pemeras (sextortion) tidak akan menghentikan ancaman melainkan meningkatkan eksploitasi. Langkah terbaik adalah mengamankan barang bukti digital, tidak menuruti tuntutan, memutus kontak, dan segera mencari pendampingan resmi."
+  },
+  {
+    id: 8,
+    category: "Eksploitasi Konten & Hak Citra Diri",
+    scenario: "Seseorang merekam teman atau orang lain yang sedang menangis tersedu-sedu atau mengalami musibah di tempat umum, lalu mengunggahnya ke TikTok/Reels demi FYP.",
+    question: "Apakah merekam dan mempublikasikan kesedihan atau kerentanan seseorang demi konten diperbolehkan tanpa persetujuan?",
+    options: [
+      { label: "Boleh, kan berada di ruang publik", value: "no", correct: false },
+      { label: "Tidak etis, melanggar privasi dan martabat orang tersebut", value: "yes", correct: true },
+      { label: "Boleh asalkan diberi lagu motivasi", value: "not_sure", correct: false }
+    ],
+    explanation: "Tepat! Ruang publik bukan izin untuk mengeksploitasi penderitaan atau kerentanan emosional orang lain demi algoritma. Setiap orang memiliki hak dasar atas martabat dan persetujuan visualnya."
+  },
+  {
+    id: 9,
+    category: "Digital Safety & Realtime Geolocation",
+    scenario: "Anda berkumpul bersama teman yang sedang butuh rasa aman atau menghindari penguntit, namun teman lain langsung mengunggah Story dan menandai live location tanpa konfirmasi.",
+    question: "Mengapa membagikan lokasi realtime (geotagging) orang lain memerlukan konfirmasi persetujuan?",
+    options: [
+      { label: "Karena informasi lokasi langsung berkaitan dengan keselamatan fisik dan privasi", value: "yes", correct: true },
+      { label: "Hanya perlu izin jika tempatnya privat atau mewah", value: "no", correct: false },
+      { label: "Tidak perlu izin karena media sosial memang untuk berbagi tempat", value: "not_sure", correct: false }
+    ],
+    explanation: "Benar! Menandai lokasi nyata seseorang secara publik tanpa izin berisiko membahayakan keamanan fisik mereka (doxing, stalking, gangguan keamanan). Selalu tanyakan izin sebelum membagikan lokasi bersama."
+  },
+  {
+    id: 10,
+    category: "FRIES - Reversible Consent",
+    scenario: "Dua minggu lalu Anda mengizinkan teman mengunggah foto bersama. Kini Anda merasa tidak nyaman karena kolom komentar mulai toksik, lalu meminta teman tersebut menghapusnya, namun dia menolak dengan alasan 'kan dulu udah diizinkan'.",
+    question: "Apakah persetujuan (consent) di ruang digital bersifat mutlak atau berhak ditarik kembali (reversible)?",
+    options: [
+      { label: "Persetujuan berhak ditarik kapan saja ketika seseorang merasa tidak aman atau nyaman", value: "yes", correct: true },
+      { label: "Persetujuan bersifat permanen dan tidak boleh dibatalkan", value: "no", correct: false },
+      { label: "Tergantung apakah fotonya sudah mendapatkan banyak likes", value: "not_sure", correct: false }
+    ],
+    explanation: "Tepat sekali! Salah satu prinsip fundamental consent (FRIES) adalah 'Reversible' — persetujuan dapat dicabut atau diubah kapan pun seseorang merasa batas kenyamanannya terganggu. Menghormati pencabutan izin adalah inti dari etika digital."
+  }
+];
+
+export const INITIAL_ASSESSMENTS = [
+  {
+    id: "assess-seed-1",
+    participantId: "usr-demo-1",
+    name: "Alya Zahra",
+    institution: "Universitas Gadjah Mada",
+    email: "alya.zahra@mail.ugm.ac.id",
+    role: "Mahasiswa",
+    mode: "pre",
+    score: 6,
+    total: 10,
+    percentage: 60,
+    timestamp: "2026-09-18T10:15:00Z",
+    syncedToBackend: true
+  },
+  {
+    id: "assess-seed-2",
+    participantId: "usr-demo-1",
+    name: "Alya Zahra",
+    institution: "Universitas Gadjah Mada",
+    email: "alya.zahra@mail.ugm.ac.id",
+    role: "Mahasiswa",
+    mode: "post",
+    score: 10,
+    total: 10,
+    percentage: 100,
+    timestamp: "2026-09-18T11:05:00Z",
+    syncedToBackend: true
+  },
+  {
+    id: "assess-seed-3",
+    participantId: "usr-demo-2",
+    name: "Fikri Maulana",
+    institution: "Institut Teknologi Bandung",
+    email: "fikri.m@students.itb.ac.id",
+    role: "Mahasiswa",
+    mode: "pre",
+    score: 5,
+    total: 10,
+    percentage: 50,
+    timestamp: "2026-09-17T14:20:00Z",
+    syncedToBackend: true
+  },
+  {
+    id: "assess-seed-4",
+    participantId: "usr-demo-2",
+    name: "Fikri Maulana",
+    institution: "Institut Teknologi Bandung",
+    email: "fikri.m@students.itb.ac.id",
+    role: "Mahasiswa",
+    mode: "post",
+    score: 9,
+    total: 10,
+    percentage: 90,
+    timestamp: "2026-09-17T15:00:00Z",
+    syncedToBackend: true
+  },
+  {
+    id: "assess-seed-5",
+    participantId: "usr-demo-3",
+    name: "Nadhira Saraswati",
+    institution: "SMA Negeri 1 Jakarta",
+    email: "nadhira.s@gmail.com",
+    role: "Siswa SMA/SMK",
+    mode: "pre",
+    score: 7,
+    total: 10,
+    percentage: 70,
+    timestamp: "2026-09-16T16:45:00Z",
+    syncedToBackend: true
   }
 ];
 

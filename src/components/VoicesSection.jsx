@@ -217,10 +217,10 @@ export const VoicesSection = () => {
 
         {/* View Mode 1: 1-Row Animated Horizontal Marquee moving left */}
         {viewMode === 'marquee' && (
-          <div className="relative">
+          <div className="voices-marquee-wrapper relative">
             <AnonymousHorizontalMarquee items={allMarqueeStories} speed={46} />
 
-            <div className="text-center mt-6 sm:mt-10 px-2">
+            <div className="text-center mt-6 sm:mt-8 px-2">
               <button
                 className="btn btn-secondary btn-sm voices-explore-jump-btn"
                 onClick={() => setViewMode('grid')}
@@ -301,11 +301,23 @@ export const VoicesSection = () => {
         )}
 
         {/* Invite to Share */}
-        <div style={{ textAlign: 'center', marginTop: '3.5rem' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+        <div style={{
+          textAlign: 'center',
+          marginTop: '4rem',
+          paddingTop: '2.5rem',
+          borderTop: '1.5px solid rgba(41, 0, 135, 0.08)'
+        }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '0.85rem', fontSize: '0.94rem' }}>
             Punya pengalaman serupa? Kamu bisa berbagi secara aman dan 100% anonim.
           </p>
-          <a href="#share" className="btn btn-outline-teal btn-sm" onClick={(e) => { e.preventDefault(); document.querySelector('#share')?.scrollIntoView({ behavior: 'smooth' }); }}>
+          <a
+            href="#share"
+            className="btn btn-outline-teal btn-sm"
+            onClick={(e) => {
+              e.preventDefault();
+              document.querySelector('#share')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
             Bagikan Pengalamanmu →
           </a>
         </div>

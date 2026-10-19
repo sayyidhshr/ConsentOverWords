@@ -166,8 +166,6 @@ export const CampaignPosterSection = () => {
                     boxShadow: 'var(--shadow-sm)',
                   }}
                 >
-                  <Sparkles size={11} />
-                  <span>Poster Resmi LIDM</span>
                 </div>
               </div>
 

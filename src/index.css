@@ -1153,7 +1153,7 @@ input, select, textarea { font-family: inherit; }
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   flex-wrap: wrap;
 }
 
@@ -1162,6 +1162,7 @@ input, select, textarea { font-family: inherit; }
     flex-direction: column;
     width: 100%;
     gap: 0.5rem;
+    margin-bottom: 2rem;
   }
   .voices-view-toggle .btn {
     width: 100%;
@@ -1173,6 +1174,11 @@ input, select, textarea { font-family: inherit; }
   }
 }
 
+.voices-marquee-wrapper {
+  margin: 1.5rem 0 2.5rem 0;
+  position: relative;
+}
+
 .voices-explore-jump-btn {
   display: inline-flex;
   align-items: center;
@@ -1181,6 +1187,15 @@ input, select, textarea { font-family: inherit; }
   text-align: center;
   line-height: 1.4;
   max-width: 100%;
+  padding: 0.65rem 1.35rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 10px rgba(41, 0, 135, 0.04);
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.voices-explore-jump-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(41, 0, 135, 0.1);
 }
 
 .filter-chip-row {
@@ -1517,6 +1532,50 @@ input, select, textarea { font-family: inherit; }
   box-shadow: var(--shadow-lg);
   position: relative;
   animation: popIn 0.25s var(--ease);
+}
+
+.quiz-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+  box-shadow: 0 2px 6px rgba(41, 0, 135, 0.03);
+}
+
+.quiz-option-btn:hover:not(:disabled) {
+  border-color: var(--purple);
+  background: var(--purple-pale);
+  transform: translateY(-1px);
+}
+
+.quiz-option-btn.selected-correct {
+  background: #F0FDF7;
+  border-color: #10B981;
+  color: #065F46;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+
+.quiz-option-btn.selected-wrong {
+  background: #FFF1F0;
+  border-color: #EF4444;
+  color: #991B1B;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+}
+
+.quiz-option-btn:disabled {
+  cursor: default;
 }
 
 @media (max-width: 768px) {

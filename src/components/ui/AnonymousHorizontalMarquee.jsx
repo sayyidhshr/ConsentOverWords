@@ -175,8 +175,7 @@ export const AnonymousHorizontalMarquee = ({
 
   if (!items || items.length === 0) return null;
 
-  // Render individual card with compact desktop height (260px), 350px width,
-  // balanced internal padding (20-24px), 44px avatar, 14px gap, and left-aligned 14.5px-15px quote with 1.6 line-height
+  // Render individual card with perfectionist dimensions, balanced padding, and spacious typography
   const renderCard = (item, index, keyPrefix) => {
     const theme = PASTEL_THEMES[index % PASTEL_THEMES.length];
     const text = item.text || item.storyText || (typeof item === 'string' ? item : '');
@@ -186,20 +185,20 @@ export const AnonymousHorizontalMarquee = ({
     return (
       <div
         key={`${keyPrefix}-${item.id || index}`}
-        className="group relative flex flex-col justify-start w-[340px] sm:w-[380px] h-[280px] px-7 py-6 sm:px-8 sm:py-7 rounded-[20px] transition-all duration-300 hover:shadow-md hover:-translate-y-1 shrink-0 box-border overflow-hidden select-none"
+        className="group relative flex flex-col justify-between w-[350px] sm:w-[410px] md:w-[430px] h-[295px] sm:h-[310px] p-6 sm:p-7 rounded-[22px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1.5 shrink-0 box-border overflow-hidden select-none"
         style={{
           boxSizing: 'border-box',
           backgroundColor: theme.bg,
           border: `1.5px solid ${theme.border}`,
-          boxShadow: '0 3px 14px -2px rgba(41, 0, 135, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 8px 24px -4px rgba(41, 0, 135, 0.05), 0 2px 6px rgba(0, 0, 0, 0.02)',
         }}
       >
-        {/* Card Header: Avatar (44px) + Name "Anonim" + Subtle Quote Icon */}
+        {/* Card Header: Avatar (44px) + Name "Anonim" + Category Tag + Subtle Quote Icon */}
         <div className="flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3.5 min-w-0">
             {/* Avatar container (44x44 circle, guaranteed round & non-distorted) */}
             <div
-              className="w-11 h-11 rounded-full shrink-0 overflow-hidden shadow-xs border border-white/80 flex items-center justify-center bg-white/60"
+              className="w-11 h-11 rounded-full shrink-0 overflow-hidden shadow-xs border border-white/80 flex items-center justify-center bg-white/70"
               style={{ borderRadius: '50%', width: '44px', height: '44px' }}
             >
               {item.image ? (
@@ -215,18 +214,28 @@ export const AnonymousHorizontalMarquee = ({
               )}
             </div>
 
-            {/* User Name: 15px-15.5px bold font next to avatar */}
-            <span
-              className="font-bold text-[#1E0A4A] text-[15px] sm:text-[15.5px] leading-tight tracking-tight truncate text-left"
-              style={{ fontFamily: "var(--font-display, 'Poppins', sans-serif)" }}
-            >
-              {name}
-            </span>
+            {/* User Name & Category Badge */}
+            <div className="flex flex-col text-left min-w-0">
+              <span
+                className="font-bold text-[#1E0A4A] text-[15px] sm:text-[15.5px] leading-tight tracking-tight truncate"
+                style={{ fontFamily: "var(--font-display, 'Poppins', sans-serif)" }}
+              >
+                {name}
+              </span>
+              {item.category && (
+                <span
+                  className="text-[11px] font-semibold mt-0.5 truncate opacity-75"
+                  style={{ color: theme.quoteColor }}
+                >
+                  {item.category}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Subtle Decorative Quote Icon */}
           <div
-            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 opacity-20 group-hover:opacity-35 transition-opacity"
+            className="w-7 h-7 rounded-full bg-white/70 flex items-center justify-center shrink-0 opacity-30 group-hover:opacity-60 transition-opacity"
             aria-hidden="true"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill={theme.quoteColor}>
@@ -235,10 +244,10 @@ export const AnonymousHorizontalMarquee = ({
           </div>
         </div>
 
-        {/* Card Body: Story Quote (14.5px-15px, line-height 1.6, 14px below header, left-aligned) */}
-        <div className="mt-3.5 flex-1 overflow-hidden text-left">
+        {/* Card Body: Story Quote (Left-aligned, ample vertical headroom so text never hits the edge) */}
+        <div className="mt-4 flex-1 flex flex-col justify-start overflow-hidden text-left">
           <p
-            className="text-[14px] sm:text-[14.5px] leading-[1.6] text-[#332B4C] italic font-normal tracking-normal break-words"
+            className="text-[14px] sm:text-[14.5px] leading-[1.65] text-[#2E2845] italic font-normal tracking-normal break-words"
             style={{ fontFamily: "var(--font-body, 'Nunito', sans-serif)" }}
           >
             "{text}"
@@ -251,8 +260,8 @@ export const AnonymousHorizontalMarquee = ({
   // Accessible fallback for users with prefers-reduced-motion
   if (prefersReducedMotion) {
     return (
-      <div className={`relative w-full overflow-x-auto py-4 px-2 select-none scrollbar-thin ${className}`}>
-        <div className="flex flex-nowrap items-center gap-6 sm:gap-8 w-max">
+      <div className={`relative w-full overflow-x-auto py-6 sm:py-8 px-2 select-none scrollbar-thin ${className}`}>
+        <div className="flex flex-nowrap items-center gap-7 sm:gap-9 w-max">
           {items.map((item, index) => renderCard(item, index, 'static'))}
         </div>
       </div>
@@ -261,12 +270,12 @@ export const AnonymousHorizontalMarquee = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden py-4 sm:py-5 select-none ${className}`}
+      className={`relative w-full overflow-hidden py-8 sm:py-10 select-none ${className}`}
       style={{
         maskImage:
-          'linear-gradient(to right, transparent 0%, black 60px, black calc(100% - 60px), transparent 100%)',
+          'linear-gradient(to right, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)',
         WebkitMaskImage:
-          'linear-gradient(to right, transparent 0%, black 60px, black calc(100% - 60px), transparent 100%)',
+          'linear-gradient(to right, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)',
       }}
       onMouseEnter={handlePause}
       onMouseLeave={handleResume}
@@ -279,12 +288,12 @@ export const AnonymousHorizontalMarquee = ({
         style={{ width: 'max-content' }}
       >
         {/* Track 1 */}
-        <div className="flex flex-nowrap items-center gap-6 sm:gap-8 shrink-0 pr-6 sm:pr-8">
+        <div className="flex flex-nowrap items-center gap-7 sm:gap-9 shrink-0 pr-7 sm:pr-9">
           {items.map((item, index) => renderCard(item, index, 'track1'))}
         </div>
 
         {/* Track 2 - Exact duplicate for seamless 100% infinite loop */}
-        <div className="flex flex-nowrap items-center gap-6 sm:gap-8 shrink-0 pr-6 sm:pr-8" aria-hidden="true">
+        <div className="flex flex-nowrap items-center gap-7 sm:gap-9 shrink-0 pr-7 sm:pr-9" aria-hidden="true">
           {items.map((item, index) => renderCard(item, index + items.length, 'track2'))}
         </div>
       </div>

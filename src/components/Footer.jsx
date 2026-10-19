@@ -100,9 +100,9 @@ export const Footer = ({ onOpenAwareness }) => {
 
         {/* Footer Bottom */}
         <div className="footer-bottom">
-          <span>© 2026 Consent Over Words — Gerakan Edukasi & Saling Jaga Warga Digital</span>
+          <span>© 2026 Consent Over Words — Gerakan Edukasi</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            Dibuat dengan <Heart size={12} fill="currentColor" color="#E893B0" /> oleh Inisiatif Mahasiswa
+            Dibuat dengan <Heart size={12} fill="currentColor" color="#E893B0" /> oleh Tim Jarvis
           </span>
         </div>
       </div>

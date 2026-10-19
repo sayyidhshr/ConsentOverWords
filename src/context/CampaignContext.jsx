@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_STORIES } from '../data/seedData';
+import { INITIAL_STORIES, INITIAL_ASSESSMENTS } from '../data/seedData';
 
 const CampaignContext = createContext();
 
@@ -8,7 +8,9 @@ const STORAGE_KEYS = {
   RESONATED: 'cow_resonated_stories',
   PRE_TEST: 'cow_awareness_pre',
   POST_TEST: 'cow_awareness_post',
-  ADMIN_AUTH: 'cow_admin_session'
+  ADMIN_AUTH: 'cow_admin_session',
+  PARTICIPANT: 'cow_participant_profile',
+  ASSESSMENTS: 'cow_assessments_history'
 };
 
 export const CampaignProvider = ({ children }) => {
@@ -32,7 +34,17 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 3. Pre & Post Awareness Quiz Logs
+  // 3. Participant Profile (Identity for Pre-Check & Post-Check)
+  const [participant, setParticipant] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PARTICIPANT);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // 4. Pre & Post Awareness Quiz Logs
   const [preTestResult, setPreTestResult] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRE_TEST);
@@ -51,7 +63,17 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 4. Admin Auth
+  // 5. Assessments Database / History (Ready for Backend Synchronization)
+  const [assessments, setAssessments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ASSESSMENTS);
+      return saved ? JSON.parse(saved) : INITIAL_ASSESSMENTS;
+    } catch {
+      return INITIAL_ASSESSMENTS;
+    }
+  });
+
+  // 6. Admin Auth
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
@@ -77,6 +99,34 @@ export const CampaignProvider = ({ children }) => {
       console.error('Failed to save resonated IDs:', e);
     }
   }, [resonatedIds]);
+
+  // Persist Assessments History (Ready for Backend Synchronization)
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(assessments));
+    } catch (e) {
+      console.error('Failed to save assessments history:', e);
+    }
+  }, [assessments]);
+
+  // Save / Update Participant Identity
+  const saveParticipant = (data) => {
+    const updated = {
+      id: participant?.id || `usr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      name: data.name?.trim() || 'Anonim',
+      institution: data.institution?.trim() || 'Umum',
+      email: data.email?.trim() || '',
+      role: data.role || 'Mahasiswa',
+      updatedAt: new Date().toISOString()
+    };
+    setParticipant(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PARTICIPANT, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save participant profile:', e);
+    }
+    return updated;
+  };
 
   // Submit New Story (Lands in Pending for moderation)
   const submitStory = (newStoryData) => {
@@ -139,16 +189,29 @@ export const CampaignProvider = ({ children }) => {
     setStories((prev) => prev.filter((s) => s.id !== id));
   };
 
-  // Save Awareness Result
-  const saveAwarenessResult = (type, score, total, userAnswers) => {
+  // Save Awareness Result (with Participant Identity & Backend API Sync schema)
+  const saveAwarenessResult = (type, score, total, userAnswers, participantOverride = null) => {
+    const activeParticipant = participantOverride || participant || {
+      id: `usr-${Date.now()}`,
+      name: 'Anonim',
+      institution: 'Umum',
+      email: '',
+      role: 'Mahasiswa'
+    };
+
+    const pct = Math.round((score / total) * 100);
+    const timestamp = new Date().toISOString();
+
     const resultObj = {
       score,
       total,
-      percentage: Math.round((score / total) * 100),
-      timestamp: new Date().toISOString(),
-      userAnswers
+      percentage: pct,
+      timestamp,
+      userAnswers,
+      participant: activeParticipant
     };
 
+    // Update active pre / post result in context & storage
     if (type === 'pre') {
       setPreTestResult(resultObj);
       localStorage.setItem(STORAGE_KEYS.PRE_TEST, JSON.stringify(resultObj));
@@ -156,6 +219,46 @@ export const CampaignProvider = ({ children }) => {
       setPostTestResult(resultObj);
       localStorage.setItem(STORAGE_KEYS.POST_TEST, JSON.stringify(resultObj));
     }
+
+    // Append to assessments history for backend tracking and admin export
+    const assessmentEntry = {
+      id: `assess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      participantId: activeParticipant.id,
+      name: activeParticipant.name,
+      institution: activeParticipant.institution,
+      email: activeParticipant.email,
+      role: activeParticipant.role,
+      mode: type,
+      score,
+      total,
+      percentage: pct,
+      answers: userAnswers,
+      timestamp,
+      syncedToBackend: true
+    };
+
+    setAssessments(prev => [assessmentEntry, ...prev]);
+
+    // Simulated Backend Webhook / Console Dispatch
+    console.info('[ConsentOverWords Backend Integration] 🚀 Assessment payload prepared for backend:', {
+      endpoint: '/api/v1/assessments/submit',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: assessmentEntry
+    });
+
+    return assessmentEntry;
+  };
+
+  // Delete single assessment record from history
+  const deleteAssessment = (id) => {
+    setAssessments(prev => prev.filter(a => a.id !== id));
+  };
+
+  // Reset assessments history to seed dataset
+  const resetAssessments = () => {
+    setAssessments(INITIAL_ASSESSMENTS);
+    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
   };
 
   // Admin Auth Helpers
@@ -177,8 +280,10 @@ export const CampaignProvider = ({ children }) => {
   const resetDemoData = () => {
     setStories(INITIAL_STORIES);
     setResonatedIds([]);
+    setAssessments(INITIAL_ASSESSMENTS);
     localStorage.removeItem(STORAGE_KEYS.STORIES);
     localStorage.removeItem(STORAGE_KEYS.RESONATED);
+    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
   };
 
   // Derived Values
@@ -200,9 +305,14 @@ export const CampaignProvider = ({ children }) => {
         rejectStory,
         updateStoryCategory,
         deleteStory,
+        participant,
+        saveParticipant,
         preTestResult,
         postTestResult,
         saveAwarenessResult,
+        assessments,
+        deleteAssessment,
+        resetAssessments,
         isAdminLoggedIn,
         adminLogin,
         adminLogout,

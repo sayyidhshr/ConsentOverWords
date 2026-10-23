@@ -1,0 +1,42 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Story {
+  id               String   @id @default(uuid())
+  category         String   @db.VarChar(100)
+  storyText        String   @db.Text
+  feeling          String?  @db.VarChar(100)
+  date             DateTime @default(now())
+  status           String   @default("pending") @db.VarChar(50)
+  resonanceCount   Int      @default(0)
+  consentToPublish Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+model Assessment {
+  id            String   @id @default(uuid())
+  participantId String?  @db.VarChar(100)
+  name          String   @default("Anonim") @db.VarChar(150)
+  institution   String?  @db.VarChar(150)
+  email         String?  @db.VarChar(150)
+  role          String   @default("Mahasiswa") @db.VarChar(100)
+  mode          String   @db.VarChar(50)
+  score         Int
+  total         Int
+  percentage    Int
+  answers       Json?
+  timestamp     DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([mode])
+}

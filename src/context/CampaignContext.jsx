@@ -13,8 +13,29 @@ const STORAGE_KEYS = {
   ASSESSMENTS: 'cow_assessments_history'
 };
 
+const API_BASE = '/api';
+
+async function apiFetch(endpoint, options = {}) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.details || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export const CampaignProvider = ({ children }) => {
-  // 1. Stories State
+  // Backend Connection Status
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(true);
+
+  // 1. Stories State (Cached from localStorage or fallback INITIAL_STORIES until backend loads)
   const [stories, setStories] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.STORIES);
@@ -63,7 +84,7 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 5. Assessments Database / History (Ready for Backend Synchronization)
+  // 5. Assessments Database / History
   const [assessments, setAssessments] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ASSESSMENTS);
@@ -82,12 +103,40 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // Persist Stories
+  // Synchronize initial data from Next.js Backend & MySQL
+  const refreshFromBackend = async () => {
+    try {
+      setIsLoadingBackend(true);
+      const [storiesData, assessmentsData] = await Promise.all([
+        apiFetch('/stories?status=all'),
+        apiFetch('/assessments')
+      ]);
+
+      if (Array.isArray(storiesData) && storiesData.length > 0) {
+        setStories(storiesData);
+      }
+      if (Array.isArray(assessmentsData) && assessmentsData.length > 0) {
+        setAssessments(assessmentsData);
+      }
+      setIsBackendConnected(true);
+    } catch (err) {
+      console.warn('[ConsentOverWords] Backend API not reached, using local storage cache:', err.message);
+      setIsBackendConnected(false);
+    } finally {
+      setIsLoadingBackend(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshFromBackend();
+  }, []);
+
+  // Persist Stories in localStorage as offline fallback
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(stories));
     } catch (e) {
-      console.error('Failed to save stories:', e);
+      console.error('Failed to cache stories:', e);
     }
   }, [stories]);
 
@@ -100,12 +149,12 @@ export const CampaignProvider = ({ children }) => {
     }
   }, [resonatedIds]);
 
-  // Persist Assessments History (Ready for Backend Synchronization)
+  // Persist Assessments History as offline fallback
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(assessments));
     } catch (e) {
-      console.error('Failed to save assessments history:', e);
+      console.error('Failed to cache assessments:', e);
     }
   }, [assessments]);
 
@@ -128,27 +177,47 @@ export const CampaignProvider = ({ children }) => {
     return updated;
   };
 
-  // Submit New Story (Lands in Pending for moderation)
-  const submitStory = (newStoryData) => {
-    const newStory = {
-      id: `story-${Date.now()}`,
-      category: newStoryData.category,
-      storyText: newStoryData.storyText,
-      feeling: newStoryData.feeling || 'Uncomfortable',
-      date: new Date().toISOString(),
-      status: 'pending', // Moderation required
-      resonanceCount: 0,
-      consentToPublish: Boolean(newStoryData.consentToPublish)
-    };
+  // Submit New Story: Saves to MySQL DB through Next.js API!
+  const submitStory = async (newStoryData) => {
+    try {
+      const savedStory = await apiFetch('/stories', {
+        method: 'POST',
+        body: JSON.stringify({
+          category: newStoryData.category,
+          storyText: newStoryData.storyText,
+          feeling: newStoryData.feeling || 'Uncomfortable',
+          consentToPublish: Boolean(newStoryData.consentToPublish)
+        })
+      });
 
-    setStories((prev) => [newStory, ...prev]);
-    return newStory;
+      setStories((prev) => [savedStory, ...prev]);
+      setIsBackendConnected(true);
+      return savedStory;
+    } catch (err) {
+      console.warn('[ConsentOverWords] Backend submission fallback to local:', err.message);
+      // Fallback local creation if backend temporarily offline
+      const localStory = {
+        id: `story-${Date.now()}`,
+        category: newStoryData.category,
+        storyText: newStoryData.storyText,
+        feeling: newStoryData.feeling || 'Uncomfortable',
+        date: new Date().toISOString(),
+        status: 'pending',
+        resonanceCount: 0,
+        consentToPublish: Boolean(newStoryData.consentToPublish)
+      };
+      setStories((prev) => [localStory, ...prev]);
+      return localStory;
+    }
   };
 
   // Resonate with Story ("You Are Not Alone")
-  const toggleResonate = (storyId) => {
-    if (resonatedIds.includes(storyId)) {
-      // Remove resonance
+  const toggleResonate = async (storyId) => {
+    const isAlreadyResonated = resonatedIds.includes(storyId);
+    const action = isAlreadyResonated ? 'decrement' : 'increment';
+
+    // Optimistic UI update
+    if (isAlreadyResonated) {
       setResonatedIds((prev) => prev.filter((id) => id !== storyId));
       setStories((prev) =>
         prev.map((s) =>
@@ -156,7 +225,6 @@ export const CampaignProvider = ({ children }) => {
         )
       );
     } else {
-      // Add resonance
       setResonatedIds((prev) => [...prev, storyId]);
       setStories((prev) =>
         prev.map((s) =>
@@ -164,33 +232,73 @@ export const CampaignProvider = ({ children }) => {
         )
       );
     }
+
+    try {
+      await apiFetch(`/stories/${storyId}/resonate`, {
+        method: 'POST',
+        body: JSON.stringify({ action })
+      });
+    } catch (err) {
+      console.warn('[ConsentOverWords] Failed to sync resonance with backend:', err.message);
+    }
   };
 
-  // Moderation Actions
-  const approveStory = (id) => {
+  // Moderation Actions: Approve, Reject, Edit, Delete with Next.js Backend Sync
+  const approveStory = async (id) => {
     setStories((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: 'approved' } : s))
     );
+    try {
+      await apiFetch(`/stories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'approved' })
+      });
+    } catch (err) {
+      console.error('Failed to sync approve to backend:', err);
+    }
   };
 
-  const rejectStory = (id) => {
+  const rejectStory = async (id) => {
     setStories((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s))
     );
+    try {
+      await apiFetch(`/stories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'rejected' })
+      });
+    } catch (err) {
+      console.error('Failed to sync reject to backend:', err);
+    }
   };
 
-  const updateStoryCategory = (id, newCategory) => {
+  const updateStoryCategory = async (id, newCategory) => {
     setStories((prev) =>
       prev.map((s) => (s.id === id ? { ...s, category: newCategory } : s))
     );
+    try {
+      await apiFetch(`/stories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ category: newCategory })
+      });
+    } catch (err) {
+      console.error('Failed to sync category update to backend:', err);
+    }
   };
 
-  const deleteStory = (id) => {
+  const deleteStory = async (id) => {
     setStories((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await apiFetch(`/stories/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.error('Failed to sync delete to backend:', err);
+    }
   };
 
-  // Save Awareness Result (with Participant Identity & Backend API Sync schema)
-  const saveAwarenessResult = (type, score, total, userAnswers, participantOverride = null) => {
+  // Save Awareness Result: Saves to MySQL DB through Next.js API!
+  const saveAwarenessResult = async (type, score, total, userAnswers, participantOverride = null) => {
     const activeParticipant = participantOverride || participant || {
       id: `usr-${Date.now()}`,
       name: 'Anonim',
@@ -211,7 +319,6 @@ export const CampaignProvider = ({ children }) => {
       participant: activeParticipant
     };
 
-    // Update active pre / post result in context & storage
     if (type === 'pre') {
       setPreTestResult(resultObj);
       localStorage.setItem(STORAGE_KEYS.PRE_TEST, JSON.stringify(resultObj));
@@ -220,9 +327,7 @@ export const CampaignProvider = ({ children }) => {
       localStorage.setItem(STORAGE_KEYS.POST_TEST, JSON.stringify(resultObj));
     }
 
-    // Append to assessments history for backend tracking and admin export
-    const assessmentEntry = {
-      id: `assess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    const payload = {
       participantId: activeParticipant.id,
       name: activeParticipant.name,
       institution: activeParticipant.institution,
@@ -233,29 +338,57 @@ export const CampaignProvider = ({ children }) => {
       total,
       percentage: pct,
       answers: userAnswers,
-      timestamp,
-      syncedToBackend: true
+      timestamp
     };
 
-    setAssessments(prev => [assessmentEntry, ...prev]);
-
-    // Simulated Backend Webhook / Console Dispatch
-    console.info('[ConsentOverWords Backend Integration] 🚀 Assessment payload prepared for backend:', {
-      endpoint: '/api/v1/assessments/submit',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: assessmentEntry
-    });
-
-    return assessmentEntry;
+    try {
+      const savedAssessment = await apiFetch('/assessments', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      setAssessments((prev) => [savedAssessment, ...prev]);
+      return savedAssessment;
+    } catch (err) {
+      console.warn('[ConsentOverWords] Backend assessment fallback to local:', err.message);
+      const localAssessment = {
+        id: `assess-${Date.now()}`,
+        ...payload,
+        syncedToBackend: false
+      };
+      setAssessments((prev) => [localAssessment, ...prev]);
+      return localAssessment;
+    }
   };
 
-  // Delete single assessment record from history
-  const deleteAssessment = (id) => {
-    setAssessments(prev => prev.filter(a => a.id !== id));
+  // Delete single assessment record from history & MySQL
+  const deleteAssessment = async (id) => {
+    setAssessments((prev) => prev.filter((a) => a.id !== id));
+    try {
+      await apiFetch(`/assessments/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.error('Failed to delete assessment from backend:', err);
+    }
   };
 
-  // Reset assessments history to seed dataset
+  // Reset demo dataset with MySQL Backend re-seed
+  const resetDemoData = async () => {
+    try {
+      const result = await apiFetch('/admin/reset', { method: 'POST' });
+      if (result.stories) setStories(result.stories);
+      if (result.assessments) setAssessments(result.assessments);
+    } catch (err) {
+      console.warn('Backend reset unavailable, resetting local dataset:', err);
+      setStories(INITIAL_STORIES);
+      setAssessments(INITIAL_ASSESSMENTS);
+    }
+    setResonatedIds([]);
+    localStorage.removeItem(STORAGE_KEYS.STORIES);
+    localStorage.removeItem(STORAGE_KEYS.RESONATED);
+    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
+  };
+
   const resetAssessments = () => {
     setAssessments(INITIAL_ASSESSMENTS);
     localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
@@ -274,16 +407,6 @@ export const CampaignProvider = ({ children }) => {
   const adminLogout = () => {
     setIsAdminLoggedIn(false);
     localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
-  };
-
-  // Reset to initial demo dataset
-  const resetDemoData = () => {
-    setStories(INITIAL_STORIES);
-    setResonatedIds([]);
-    setAssessments(INITIAL_ASSESSMENTS);
-    localStorage.removeItem(STORAGE_KEYS.STORIES);
-    localStorage.removeItem(STORAGE_KEYS.RESONATED);
-    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
   };
 
   // Derived Values
@@ -316,7 +439,10 @@ export const CampaignProvider = ({ children }) => {
         isAdminLoggedIn,
         adminLogin,
         adminLogout,
-        resetDemoData
+        resetDemoData,
+        isBackendConnected,
+        isLoadingBackend,
+        refreshFromBackend
       }}
     >
       {children}

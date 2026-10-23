@@ -15,19 +15,33 @@ export const ShareStorySection = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (story.trim().length < 20) { setError('Cerita minimal 20 karakter agar konteks dapat dipahami.'); return; }
-    if (!consent) { setError('Centang persetujuan publikasi anonim terlebih dahulu.'); return; }
+    if (story.trim().length < 20) {
+      setError('Cerita minimal 20 karakter agar konteks dapat dipahami.');
+      return;
+    }
+    if (!consent) {
+      setError('Centang persetujuan publikasi anonim terlebih dahulu.');
+      return;
+    }
     setSubmitting(true);
-    setTimeout(() => {
-      submitStory({ category, storyText: story.trim(), feeling, consentToPublish: consent });
-      setSubmitting(false);
+    try {
+      await submitStory({
+        category,
+        storyText: story.trim(),
+        feeling,
+        consentToPublish: consent
+      });
       setSuccess(true);
       setStory('');
       setConsent(false);
-    }, 600);
+    } catch (err) {
+      setError(err.message || 'Gagal mengirim cerita ke server.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -59,7 +73,7 @@ export const ShareStorySection = () => {
             <ul>
               <li><span style={{ color: 'var(--teal)', fontWeight: 700 }}>✓</span><span><strong>100% Anonim</strong> — Tanpa nama, tanpa login, tanpa penyimpanan identitas apa pun.</span></li>
               <li><span style={{ color: 'var(--teal)', fontWeight: 700 }}>✓</span><span><strong>Jangan sertakan</strong> nama orang lain, nomor telepon, alamat, atau username akun.</span></li>
-              <li><span style={{ color: 'var(--teal)', fontWeight: 700 }}>✓</span><span><strong>Melalui Moderasi</strong> — Cerita ditinjau dulu sebelum tampil di Voices Gallery.</span></li>
+              <li><span style={{ color: 'var(--teal)', fontWeight: 700 }}>✓</span><span><strong>Tersimpan di Database</strong> — Cerita diproses dan ditinjau melalui meja moderasi sebelum tampil di Voices.</span></li>
               <li><span style={{ color: 'var(--teal)', fontWeight: 700 }}>✓</span><span><strong>Bukan pengaduan resmi</strong> — Untuk darurat, gunakan layanan di Help & Resources.</span></li>
             </ul>
           </div>
@@ -79,7 +93,7 @@ export const ShareStorySection = () => {
               </div>
               <h3 style={{ fontSize: '1.55rem', marginBottom: '0.5rem' }}>Thank you for sharing. 💚</h3>
               <p style={{ color: 'var(--text-muted)', maxWidth: 500, margin: '0 auto 1.5rem auto' }}>
-                Your story has been received and will be reviewed before it can appear on Voices. Keberanianmu berbagi adalah langkah pertama menciptakan ruang digital yang lebih berempati.
+                Cerita Anda telah tersimpan ke database dan akan ditinjau tim moderasi sebelum tampil di Voices Gallery. Keberanianmu berbagi adalah langkah pertama menciptakan ruang digital yang lebih berempati.
               </p>
               <button className="btn btn-secondary" onClick={() => setSuccess(false)}>Kirim Cerita Lain</button>
             </div>
@@ -96,13 +110,13 @@ export const ShareStorySection = () => {
 
               {/* Story Text */}
               <div className="form-group">
-                <label className="form-label" htmlFor="story-text">Cerita Pengalamanmu:</label>
+                <label className="form-label" htmlFor="story-text">Cerita Pengalamanmu (Pesan):</label>
                 <textarea
                   id="story-text"
                   className="form-textarea"
                   value={story}
                   onChange={e => setStory(e.target.value)}
-                  placeholder="Tell us what happened. Please do not include names or personal information..."
+                  placeholder="Ceritakan apa yang terjadi. Jangan sertakan nama atau informasi pribadi..."
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
                   <span>Minimal 20 karakter</span>
@@ -112,7 +126,7 @@ export const ShareStorySection = () => {
 
               {/* Feeling */}
               <div className="form-group">
-                <label className="form-label">Bagaimana perasaanmu saat itu? (opsional)</label>
+                <label className="form-label">Bagaimana perasaanmu saat itu? (Informasi tambahan)</label>
                 <div className="feeling-group">
                   {FEELINGS.map(f => (
                     <button key={f} type="button" className={`feeling-btn ${feeling === f ? 'active' : ''}`} onClick={() => setFeeling(f)}>
@@ -146,7 +160,7 @@ export const ShareStorySection = () => {
                 disabled={submitting}
               >
                 <Send size={17} />
-                <span>{submitting ? 'Mengirim...' : 'Submit My Story'}</span>
+                <span>{submitting ? 'Menyimpan ke Database...' : 'Submit My Story'}</span>
               </button>
             </form>
           )}

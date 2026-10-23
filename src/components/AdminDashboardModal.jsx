@@ -20,7 +20,8 @@ export const AdminDashboardModal = ({ isOpen, onClose }) => {
     isAdminLoggedIn, adminLogin, adminLogout,
     stories, approvedStories, pendingStories, rejectedStories,
     approveStory, rejectStory, updateStoryCategory, deleteStory, resetDemoData,
-    assessments, deleteAssessment, resetAssessments
+    assessments, deleteAssessment, resetAssessments,
+    isBackendConnected
   } = useCampaign();
 
   const [password, setPassword] = useState('');
@@ -197,9 +198,6 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
                   autoFocus
                   required
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.3rem', display: 'block' }}>
-                  Demo PIN: <code>admin123</code>
-                </span>
               </div>
               {loginError && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>
@@ -233,9 +231,16 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.25rem' }}>Consent Over Words — Control Center</h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                    Admin Session Active · Moderasi & Backend Hub
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                      Admin Session Active · Moderasi Hub
+                    </span>
+                    {isBackendConnected ? (
+                      <span className="badge badge-teal" style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>● MySQL Aktif</span>
+                    ) : (
+                      <span className="badge badge-orange" style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>○ Cache Mode</span>
+                    )}
+                  </div>
                 </div>
               </div>
 

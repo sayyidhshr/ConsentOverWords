@@ -93,7 +93,7 @@ export const CampaignProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.removeItem('cow_admin_session'); // sisa login lama
-    } catch {}
+    } catch { }
     apiFetch('/admin/session')
       .then((d) => setIsAdminLoggedIn(Boolean(d.loggedIn)))
       .catch(() => setIsAdminLoggedIn(false));
@@ -370,13 +370,13 @@ export const CampaignProvider = ({ children }) => {
   };
 
   // Admin auth: diverifikasi server lewat cookie httpOnly
-  const adminLogin = async (password) => {
+  const adminLogin = async (username, password) => {
     try {
       await apiFetch('/admin/login', {
         method: 'POST',
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
-      setIsAdminLoggedIn(true); // memicu pemuatan data admin
+      setIsAdminLoggedIn(true);
       return true;
     } catch {
       return false;

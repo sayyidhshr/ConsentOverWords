@@ -25,6 +25,7 @@ export const AdminDashboardModal = ({ isOpen, onClose }) => {
   } = useCampaign();
 
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loginError, setLoginError] = useState('');
 
   // Top Section Switcher: 'stories' | 'respondents'
@@ -47,9 +48,12 @@ export const AdminDashboardModal = ({ isOpen, onClose }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    const ok = await adminLogin(password);
-    if (!ok) setLoginError('Password salah.');
-    else setPassword('');
+    const ok = await adminLogin(username, password);
+    if (!ok) setLoginError('Username atau password salah.');
+    else {
+      setUsername('');
+      setPassword('');
+    }
   };
 
   // Filtered stories
@@ -185,6 +189,20 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
             </p>
             <form onSubmit={handleLogin} style={{ textAlign: 'left' }}>
               <div className="form-group">
+                <label className="form-label" htmlFor="admin-username">Username Admin:</label>
+                <input
+                  id="admin-username"
+                  type="text"
+                  className="form-input"
+                  placeholder="Masukkan username..."
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="form-group">
                 <label className="form-label" htmlFor="admin-password">Kata Sandi Admin:</label>
                 <input
                   id="admin-password"
@@ -193,7 +211,7 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
                   placeholder="Masukkan password..."
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  autoFocus
+                  autoComplete="current-password"
                   required
                 />
               </div>

@@ -134,20 +134,20 @@ export const AwarenessCheckModal = ({ isOpen, onClose, mode = 'pre' }) => {
   const getFeedback = () => {
     if (pct >= 90) {
       return {
-        title: 'Champion of Digital Boundaries! ✨',
+        title: 'Champion of Digital Boundaries! ',
         msg: 'Kamu memiliki kepekaan dan pemahaman etika yang sangat tinggi mengenai consent dan batasan digital. Terus jaga ruang siber agar aman dan berdaya bersama!',
         color: 'var(--purple-deep)'
       };
     }
     if (pct >= 70) {
       return {
-        title: 'Empathetic Digital Citizen 🌱',
+        title: 'Empathetic Digital Citizen',
         msg: 'Kamu sudah memiliki pemahaman yang baik terhadap privasi dan batasan orang lain. Jelajahi modul edukasi untuk mempertajam respon saat situasi kritis!',
         color: 'var(--purple)'
       };
     }
     return {
-      title: 'Growing Digital Explorer 🧭',
+      title: 'Growing Digital Explorer',
       msg: 'Setiap orang belajar dengan dinamikanya masing-masing. Platform ini hadir untuk memandu dan memperluas sudut pandangmu tentang rasa aman bersama.',
       color: 'var(--orange)'
     };

@@ -218,7 +218,7 @@ export const VoicesSection = () => {
         {/* View Mode 1: 1-Row Animated Horizontal Marquee moving left */}
         {viewMode === 'marquee' && (
           <div className="voices-marquee-wrapper relative">
-            <AnonymousHorizontalMarquee items={allMarqueeStories} speed={46} />
+            <AnonymousHorizontalMarquee items={allMarqueeStories} speed={65} />
 
             <div className="text-center mt-6 sm:mt-8 px-2">
               <button

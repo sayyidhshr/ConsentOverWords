@@ -230,16 +230,9 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
                   <Shield size={22} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.25rem' }}>Consent Over Words — Control Center</h3>
+                  <h3 style={{ fontSize: '1.25rem' }}>Consent Over Words - Control Center</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                      Admin Session Active · Moderasi Hub
-                    </span>
-                    {isBackendConnected ? (
-                      <span className="badge badge-teal" style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>● MySQL Aktif</span>
-                    ) : (
-                      <span className="badge badge-orange" style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>○ Cache Mode</span>
-                    )}
+                   
                   </div>
                 </div>
               </div>

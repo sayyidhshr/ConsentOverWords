@@ -44,14 +44,12 @@ export const AdminDashboardModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    if (!adminLogin(password)) {
-      setLoginError('Password salah. Gunakan: admin123');
-    } else {
-      setPassword('');
-    }
+    const ok = await adminLogin(password);
+    if (!ok) setLoginError('Password salah.');
+    else setPassword('');
   };
 
   // Filtered stories
@@ -232,7 +230,7 @@ app.post('/api/v1/assessments/submit', async (req, res) => {
                 <div>
                   <h3 style={{ fontSize: '1.25rem' }}>Consent Over Words - Control Center</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                   
+
                   </div>
                 </div>
               </div>

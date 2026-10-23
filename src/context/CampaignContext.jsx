@@ -8,34 +8,33 @@ const STORAGE_KEYS = {
   RESONATED: 'cow_resonated_stories',
   PRE_TEST: 'cow_awareness_pre',
   POST_TEST: 'cow_awareness_post',
-  ADMIN_AUTH: 'cow_admin_session',
   PARTICIPANT: 'cow_participant_profile',
-  ASSESSMENTS: 'cow_assessments_history'
 };
 
 const API_BASE = '/api';
 
 async function apiFetch(endpoint, options = {}) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    ...options,
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.details || `HTTP ${res.status}`);
+    const error = new Error(errorData.error || `HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }
 
 export const CampaignProvider = ({ children }) => {
-  // Backend Connection Status
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [isLoadingBackend, setIsLoadingBackend] = useState(true);
 
-  // 1. Stories State (Cached from localStorage or fallback INITIAL_STORIES until backend loads)
+  // 1. Stories (cache localStorage sebagai fallback offline)
   const [stories, setStories] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.STORIES);
@@ -45,7 +44,7 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 2. Resonated stories (to prevent multiple votes per story per user session)
+  // 2. Resonated stories
   const [resonatedIds, setResonatedIds] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.RESONATED);
@@ -55,7 +54,7 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 3. Participant Profile (Identity for Pre-Check & Post-Check)
+  // 3. Participant profile
   const [participant, setParticipant] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PARTICIPANT);
@@ -65,7 +64,7 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 4. Pre & Post Awareness Quiz Logs
+  // 4. Pre & Post test
   const [preTestResult, setPreTestResult] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRE_TEST);
@@ -84,54 +83,61 @@ export const CampaignProvider = ({ children }) => {
     }
   });
 
-  // 5. Assessments Database / History
-  const [assessments, setAssessments] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ASSESSMENTS);
-      return saved ? JSON.parse(saved) : INITIAL_ASSESSMENTS;
-    } catch {
-      return INITIAL_ASSESSMENTS;
-    }
-  });
+  // 5. Assessments: data responden, hanya dimuat untuk admin dan TIDAK disimpan di localStorage
+  const [assessments, setAssessments] = useState([]);
 
-  // 6. Admin Auth
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // 6. Admin auth: status berasal dari cookie di server, bukan localStorage
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
-  // Synchronize initial data from Next.js Backend & MySQL
-  const refreshFromBackend = async () => {
+  // Cek sesi admin saat aplikasi dimuat
+  useEffect(() => {
+    try {
+      localStorage.removeItem('cow_admin_session'); // sisa login lama
+    } catch {}
+    apiFetch('/admin/session')
+      .then((d) => setIsAdminLoggedIn(Boolean(d.loggedIn)))
+      .catch(() => setIsAdminLoggedIn(false));
+  }, []);
+
+  // Muat data dari backend. Admin: semua cerita + responden. Publik: cerita approved saja.
+  const refreshFromBackend = async (admin = isAdminLoggedIn) => {
     try {
       setIsLoadingBackend(true);
-      const [storiesData, assessmentsData] = await Promise.all([
-        apiFetch('/stories?status=all'),
-        apiFetch('/assessments')
-      ]);
 
-      if (Array.isArray(storiesData) && storiesData.length > 0) {
-        setStories(storiesData);
+      const storiesData = await apiFetch(admin ? '/stories?status=all' : '/stories?status=approved');
+      if (Array.isArray(storiesData)) setStories(storiesData);
+
+      if (admin) {
+        try {
+          const assessmentsData = await apiFetch('/assessments');
+          if (Array.isArray(assessmentsData)) setAssessments(assessmentsData);
+        } catch (err) {
+          if (err.status === 401) {
+            // sesi habis
+            setIsAdminLoggedIn(false);
+            setAssessments([]);
+          } else {
+            throw err;
+          }
+        }
       }
-      if (Array.isArray(assessmentsData) && assessmentsData.length > 0) {
-        setAssessments(assessmentsData);
-      }
+
       setIsBackendConnected(true);
     } catch (err) {
-      console.warn('[ConsentOverWords] Backend API not reached, using local storage cache:', err.message);
+      console.warn('[ConsentOverWords] Backend API not reached, using local cache:', err.message);
       setIsBackendConnected(false);
     } finally {
       setIsLoadingBackend(false);
     }
   };
 
+  // Muat ulang setiap status login berubah (termasuk saat mount)
   useEffect(() => {
-    refreshFromBackend();
-  }, []);
+    refreshFromBackend(isAdminLoggedIn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminLoggedIn]);
 
-  // Persist Stories in localStorage as offline fallback
+  // Cache stories
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(stories));
@@ -140,7 +146,7 @@ export const CampaignProvider = ({ children }) => {
     }
   }, [stories]);
 
-  // Persist Resonated
+  // Persist resonated
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.RESONATED, JSON.stringify(resonatedIds));
@@ -149,16 +155,7 @@ export const CampaignProvider = ({ children }) => {
     }
   }, [resonatedIds]);
 
-  // Persist Assessments History as offline fallback
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(assessments));
-    } catch (e) {
-      console.error('Failed to cache assessments:', e);
-    }
-  }, [assessments]);
-
-  // Save / Update Participant Identity
+  // Save / update participant identity
   const saveParticipant = (data) => {
     const updated = {
       id: participant?.id || `usr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -166,7 +163,7 @@ export const CampaignProvider = ({ children }) => {
       institution: data.institution?.trim() || 'Umum',
       email: data.email?.trim() || '',
       role: data.role || 'Mahasiswa',
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     setParticipant(updated);
     try {
@@ -177,7 +174,7 @@ export const CampaignProvider = ({ children }) => {
     return updated;
   };
 
-  // Submit New Story: Saves to MySQL DB through Next.js API!
+  // Submit story
   const submitStory = async (newStoryData) => {
     try {
       const savedStory = await apiFetch('/stories', {
@@ -186,16 +183,16 @@ export const CampaignProvider = ({ children }) => {
           category: newStoryData.category,
           storyText: newStoryData.storyText,
           feeling: newStoryData.feeling || 'Uncomfortable',
-          consentToPublish: Boolean(newStoryData.consentToPublish)
-        })
+          consentToPublish: Boolean(newStoryData.consentToPublish),
+        }),
       });
 
-      setStories((prev) => [savedStory, ...prev]);
+      // Cerita baru berstatus pending; hanya admin yang boleh melihatnya di daftar
+      if (isAdminLoggedIn) setStories((prev) => [savedStory, ...prev]);
       setIsBackendConnected(true);
       return savedStory;
     } catch (err) {
       console.warn('[ConsentOverWords] Backend submission fallback to local:', err.message);
-      // Fallback local creation if backend temporarily offline
       const localStory = {
         id: `story-${Date.now()}`,
         category: newStoryData.category,
@@ -204,17 +201,16 @@ export const CampaignProvider = ({ children }) => {
         date: new Date().toISOString(),
         status: 'pending',
         resonanceCount: 0,
-        consentToPublish: Boolean(newStoryData.consentToPublish)
+        consentToPublish: Boolean(newStoryData.consentToPublish),
       };
-      setStories((prev) => [localStory, ...prev]);
+      if (isAdminLoggedIn) setStories((prev) => [localStory, ...prev]);
       return localStory;
     }
   };
 
-  // Resonate with Story ("You Are Not Alone")
+  // "You're not alone"
   const toggleResonate = async (storyId) => {
     const isAlreadyResonated = resonatedIds.includes(storyId);
-    const action = isAlreadyResonated ? 'decrement' : 'increment';
 
     // Optimistic UI update
     if (isAlreadyResonated) {
@@ -234,77 +230,63 @@ export const CampaignProvider = ({ children }) => {
     }
 
     try {
-      await apiFetch(`/stories/${storyId}/resonate`, {
-        method: 'POST',
-        body: JSON.stringify({ action })
+      await apiFetch(`/stories/${storyId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ resonate: !isAlreadyResonated }),
       });
     } catch (err) {
       console.warn('[ConsentOverWords] Failed to sync resonance with backend:', err.message);
     }
   };
 
-  // Moderation Actions: Approve, Reject, Edit, Delete with Next.js Backend Sync
-  const approveStory = async (id) => {
-    setStories((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: 'approved' } : s))
-    );
+  // Moderasi: jika server menolak (mis. sesi habis), tampilan dikembalikan dari server
+  const syncModeration = async (endpoint, options) => {
     try {
-      await apiFetch(`/stories/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'approved' })
-      });
+      await apiFetch(endpoint, options);
     } catch (err) {
-      console.error('Failed to sync approve to backend:', err);
+      console.error('Moderation sync failed:', err.message);
+      if (err.status === 401) setIsAdminLoggedIn(false);
+      else refreshFromBackend(isAdminLoggedIn);
     }
+  };
+
+  const approveStory = async (id) => {
+    setStories((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'approved' } : s)));
+    await syncModeration(`/stories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'approved' }),
+    });
   };
 
   const rejectStory = async (id) => {
-    setStories((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s))
-    );
-    try {
-      await apiFetch(`/stories/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'rejected' })
-      });
-    } catch (err) {
-      console.error('Failed to sync reject to backend:', err);
-    }
+    setStories((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s)));
+    await syncModeration(`/stories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'rejected' }),
+    });
   };
 
   const updateStoryCategory = async (id, newCategory) => {
-    setStories((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, category: newCategory } : s))
-    );
-    try {
-      await apiFetch(`/stories/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ category: newCategory })
-      });
-    } catch (err) {
-      console.error('Failed to sync category update to backend:', err);
-    }
+    setStories((prev) => prev.map((s) => (s.id === id ? { ...s, category: newCategory } : s)));
+    await syncModeration(`/stories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ category: newCategory }),
+    });
   };
 
   const deleteStory = async (id) => {
     setStories((prev) => prev.filter((s) => s.id !== id));
-    try {
-      await apiFetch(`/stories/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (err) {
-      console.error('Failed to sync delete to backend:', err);
-    }
+    await syncModeration(`/stories/${id}`, { method: 'DELETE' });
   };
 
-  // Save Awareness Result: Saves to MySQL DB through Next.js API!
+  // Simpan hasil kuis
   const saveAwarenessResult = async (type, score, total, userAnswers, participantOverride = null) => {
     const activeParticipant = participantOverride || participant || {
       id: `usr-${Date.now()}`,
       name: 'Anonim',
       institution: 'Umum',
       email: '',
-      role: 'Mahasiswa'
+      role: 'Mahasiswa',
     };
 
     const pct = Math.round((score / total) * 100);
@@ -316,7 +298,7 @@ export const CampaignProvider = ({ children }) => {
       percentage: pct,
       timestamp,
       userAnswers,
-      participant: activeParticipant
+      participant: activeParticipant,
     };
 
     if (type === 'pre') {
@@ -338,78 +320,81 @@ export const CampaignProvider = ({ children }) => {
       total,
       percentage: pct,
       answers: userAnswers,
-      timestamp
+      timestamp,
     };
 
     try {
-      const savedAssessment = await apiFetch('/assessments', {
+      // Server hanya mengembalikan { success, id }
+      const saved = await apiFetch('/assessments', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      setAssessments((prev) => [savedAssessment, ...prev]);
-      return savedAssessment;
+      const record = { ...payload, id: saved.id };
+      if (isAdminLoggedIn) setAssessments((prev) => [record, ...prev]);
+      return record;
     } catch (err) {
       console.warn('[ConsentOverWords] Backend assessment fallback to local:', err.message);
       const localAssessment = {
         id: `assess-${Date.now()}`,
         ...payload,
-        syncedToBackend: false
+        syncedToBackend: false,
       };
-      setAssessments((prev) => [localAssessment, ...prev]);
+      if (isAdminLoggedIn) setAssessments((prev) => [localAssessment, ...prev]);
       return localAssessment;
     }
   };
 
-  // Delete single assessment record from history & MySQL
   const deleteAssessment = async (id) => {
     setAssessments((prev) => prev.filter((a) => a.id !== id));
-    try {
-      await apiFetch(`/assessments/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (err) {
-      console.error('Failed to delete assessment from backend:', err);
-    }
+    await syncModeration(`/assessments/${id}`, { method: 'DELETE' });
   };
 
-  // Reset demo dataset with MySQL Backend re-seed
+  // Reset demo (khusus admin; route /api/admin/reset juga harus dijaga isAdmin())
   const resetDemoData = async () => {
     try {
       const result = await apiFetch('/admin/reset', { method: 'POST' });
       if (result.stories) setStories(result.stories);
       if (result.assessments) setAssessments(result.assessments);
     } catch (err) {
-      console.warn('Backend reset unavailable, resetting local dataset:', err);
+      console.warn('Backend reset unavailable, resetting local dataset:', err.message);
       setStories(INITIAL_STORIES);
       setAssessments(INITIAL_ASSESSMENTS);
     }
     setResonatedIds([]);
     localStorage.removeItem(STORAGE_KEYS.STORIES);
     localStorage.removeItem(STORAGE_KEYS.RESONATED);
-    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
   };
 
   const resetAssessments = () => {
     setAssessments(INITIAL_ASSESSMENTS);
-    localStorage.removeItem(STORAGE_KEYS.ASSESSMENTS);
   };
 
-  // Admin Auth Helpers
-  const adminLogin = (password) => {
-    if (password === 'admin123' || password === 'consent2026') {
-      setIsAdminLoggedIn(true);
-      localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+  // Admin auth: diverifikasi server lewat cookie httpOnly
+  const adminLogin = async (password) => {
+    try {
+      await apiFetch('/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      });
+      setIsAdminLoggedIn(true); // memicu pemuatan data admin
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
-  const adminLogout = () => {
-    setIsAdminLoggedIn(false);
-    localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+  const adminLogout = async () => {
+    try {
+      await apiFetch('/admin/logout', { method: 'POST' });
+    } catch (err) {
+      console.warn('Logout request failed:', err.message);
+    }
+    setIsAdminLoggedIn(false); // memicu muat ulang data publik
+    setAssessments([]);
+    localStorage.removeItem(STORAGE_KEYS.STORIES); // buang cache cerita pending/rejected
   };
 
-  // Derived Values
+  // Derived values
   const approvedStories = stories.filter((s) => s.status === 'approved');
   const pendingStories = stories.filter((s) => s.status === 'pending');
   const rejectedStories = stories.filter((s) => s.status === 'rejected');
@@ -442,7 +427,7 @@ export const CampaignProvider = ({ children }) => {
         resetDemoData,
         isBackendConnected,
         isLoadingBackend,
-        refreshFromBackend
+        refreshFromBackend,
       }}
     >
       {children}

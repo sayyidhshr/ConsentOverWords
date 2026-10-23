@@ -1,36 +1,29 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { isAdmin } from '@/lib/auth';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
-}
-
-// GET /api/assessments - List all assessments for admin dashboard
+// GET /api/assessments - Daftar responden (khusus admin)
 export async function GET() {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const assessments = await prisma.assessment.findMany({
-      orderBy: {
-        timestamp: 'desc',
-      },
+      orderBy: { timestamp: 'desc' },
     });
 
-    return NextResponse.json(assessments, { status: 200, headers: corsHeaders });
+    return NextResponse.json(assessments, { status: 200 });
   } catch (error) {
     console.error('Error fetching assessments:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch assessments', details: error.message },
-      { status: 500, headers: corsHeaders }
+      { error: 'Failed to fetch assessments' },
+      { status: 500 }
     );
   }
 }
 
-// POST /api/assessments - Save awareness quiz result to database
+// POST /api/assessments - Simpan hasil kuis (publik)
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -51,25 +44,26 @@ export async function POST(request) {
     const newAssessment = await prisma.assessment.create({
       data: {
         participantId: participantId || null,
-        name: name ? name.trim() : 'Anonim',
-        institution: institution ? institution.trim() : 'Umum',
-        email: email ? email.trim() : '',
-        role: role || 'Mahasiswa',
-        mode: mode || 'pre',
+        name: name ? String(name).trim().slice(0, 150) : 'Anonim',
+        institution: institution ? String(institution).trim().slice(0, 150) : 'Umum',
+        email: email ? String(email).trim().slice(0, 150) : '',
+        role: role ? String(role).slice(0, 100) : 'Mahasiswa',
+        mode: mode === 'post' ? 'post' : 'pre',
         score: Number(score) || 0,
         total: Number(total) || 10,
         percentage: Number(percentage) || 0,
         answers: answers || null,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
       },
+      select: { id: true },
     });
 
-    return NextResponse.json(newAssessment, { status: 201, headers: corsHeaders });
+    return NextResponse.json({ success: true, id: newAssessment.id }, { status: 201 });
   } catch (error) {
     console.error('Error saving assessment:', error);
     return NextResponse.json(
-      { error: 'Gagal menyimpan hasil asesmen ke database', details: error.message },
-      { status: 500, headers: corsHeaders }
+      { error: 'Gagal menyimpan hasil asesmen ke database' },
+      { status: 500 }
     );
   }
 }

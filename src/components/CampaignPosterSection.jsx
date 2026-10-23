@@ -111,7 +111,7 @@ export const CampaignPosterSection = () => {
               >
                 <img
                   src="/Poster.png"
-                  alt="Poster Resmi Kampanye Consent Over Words – LIDM 2026"
+                  alt="Poster Resmi Kampanye Consent Over Words - LIDM 2026"
                   style={{
                     width: '100%',
                     height: '100%',

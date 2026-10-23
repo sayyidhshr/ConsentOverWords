@@ -17,7 +17,7 @@ export async function GET(request) {
 
     const where = {};
     if (!admin) {
-      where.status = 'approved'; // publik: selalu approved, meski status kosong
+      where.status = 'approved'; 
     } else if (status && status !== 'all') {
       where.status = status;
     }

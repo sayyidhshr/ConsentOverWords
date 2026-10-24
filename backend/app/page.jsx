@@ -2,7 +2,7 @@ export default function BackendHomePage() {
   return (
     <main style={{ maxWidth: 800, margin: '2rem auto', background: '#FFF', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-        <span style={{ fontSize: '2rem' }}>🛡️</span>
+        <span style={{ fontSize: '2rem' }}></span>
         <h1 style={{ fontSize: '1.75rem', margin: 0, color: '#1B2A4A' }}>Consent Over Words — Backend API</h1>
       </div>
       <p style={{ color: '#64748B', lineHeight: 1.6 }}>

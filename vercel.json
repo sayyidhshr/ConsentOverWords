@@ -20,8 +20,7 @@
     {
       "source": "/admin",
       "destination": {
-        "service": "app",
-        "path": "/index.html"
+        "service": "app"
       }
     },
     {

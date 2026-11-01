@@ -18,6 +18,13 @@
       }
     },
     {
+      "source": "/admin",
+      "destination": {
+        "service": "app",
+        "path": "/index.html"
+      }
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "service": "app"

@@ -18,13 +18,7 @@
       }
     },
     {
-      "source": "/admin",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/admin/:path*",
+      "source": "/admin(.*)",
       "destination": {
         "service": "app"
       }

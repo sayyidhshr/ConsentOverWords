@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CampaignProvider } from './context/CampaignContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -12,19 +12,40 @@ import { Footer } from './components/Footer';
 import { AwarenessCheckModal } from './components/AwarenessCheckModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 
-// Simple /admin route detection for the Admin Dashboard
-const isAdminRoute = () =>
-  typeof window !== 'undefined' &&
-  (window.location.pathname === '/admin' || window.location.search.includes('admin=1'));
+// Deteksi rute /admin (mendukung /admin, /admin/, atau ?admin=1)
+const isAdminRoute = () => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname;
+  const search = window.location.search;
+  return path === '/admin' || path === '/admin/' || search.includes('admin=1');
+};
 
 export const AppContent = () => {
   const [awarenessOpen, setAwarenessOpen] = useState(false);
   const [awarenessMode, setAwarenessMode] = useState('pre');
   const [adminOpen, setAdminOpen] = useState(isAdminRoute());
 
+  // Pantau perubahan URL/history browser (misal tombol Back/Forward atau akses langsung)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      setAdminOpen(isAdminRoute());
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
   const openAwareness = (mode) => {
     setAwarenessMode(mode);
     setAwarenessOpen(true);
+  };
+
+  const handleCloseAdmin = () => {
+    setAdminOpen(false);
+    // Ubah URL kembali ke root (/) tanpa reload halaman saat modal admin ditutup
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+      window.history.pushState({}, '', '/');
+    }
   };
 
   return (
@@ -60,7 +81,7 @@ export const AppContent = () => {
       {/* Admin Dashboard Modal — accessed via /admin or ?admin=1 */}
       <AdminDashboardModal
         isOpen={adminOpen}
-        onClose={() => setAdminOpen(false)}
+        onClose={handleCloseAdmin}
       />
     </div>
   );
